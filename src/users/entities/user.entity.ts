@@ -1,7 +1,7 @@
 import { Article } from "src/articles/entities/article.entity";
 import { Comment } from "src/comments/entities/comment.entity";
 import { Like } from "src/likes/entities/like.entity";
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity('users')
 export class User {
@@ -22,4 +22,23 @@ export class User {
 
     @OneToMany(() => Like, (like) => like.user)
     likes: Like[];
+
+    // Users that this user is following
+    @ManyToMany(() => User, (user) => user.followers)
+    @JoinTable({
+        name: 'user_followers', // Name of the join table
+        joinColumn: {
+        name: 'followerId',
+        referencedColumnName: 'id',
+        },
+        inverseJoinColumn: {
+        name: 'followingId',
+        referencedColumnName: 'id',
+        },
+    })
+    following: User[];
+
+    // Users that follow this user
+    @ManyToMany(() => User, (user) => user.following)
+    followers: User[];
 }

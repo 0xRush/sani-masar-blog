@@ -3,16 +3,18 @@ import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Article } from './entities/article.entity';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, ILike, Repository } from 'typeorm';
 import { User } from 'src/users/entities/user.entity';
 import { title } from 'process';
 import { LikesService } from 'src/likes/likes.service';
 import { CommentsService } from 'src/comments/comments.service';
 import { CreateCommentDto } from 'src/comments/dto/create-comment.dto';
 import { UpdateCommentDto } from 'src/comments/dto/update-comment.dto';
+import { PageService } from 'src/Pagination/page.service';
+import { GenericFilter } from 'src/Pagination/generic-filter';
 
 @Injectable()
-export class ArticlesService {
+export class ArticlesService extends PageService{
 
   private usersRepository;
 
@@ -23,6 +25,7 @@ export class ArticlesService {
     private likesService: LikesService,
     private commentsService: CommentsService
   ) {
+    super();
     this.usersRepository = dataSource.getRepository(User);
   }
 
@@ -46,6 +49,28 @@ export class ArticlesService {
     const res = await this.likesService.toggleLike(article, user);
 
     return res;
+  }
+
+  async findAllPaginated(filter: GenericFilter,
+  ) {
+    const { ...params } = filter;
+
+    return await this.paginate(
+      this.articlesRepository,
+      filter,
+      this.createWhereQuery(params),
+    );
+  }
+  
+  private createWhereQuery(params) {
+    const where: any = {};
+
+    if (params.searchString) {
+      where.title = ILike(`%${params.searchString}%`);
+    }
+
+
+    return where;
   }
 
   async findAll() {

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Query } from '@nestjs/common';
 import { ArticlesService } from './articles.service';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
@@ -7,6 +7,8 @@ import { User } from 'src/auth/decorators/user.decorator';
 import { Public } from 'src/auth/decorators/public.decorator';
 import { CreateCommentDto } from 'src/comments/dto/create-comment.dto';
 import { UpdateCommentDto } from 'src/comments/dto/update-comment.dto';
+import { GenericFilter } from 'src/Pagination/generic-filter';
+import { Article } from './entities/article.entity';
 
 @Controller('articles')
 export class ArticlesController {
@@ -17,6 +19,18 @@ export class ArticlesController {
   @Post()
   create(@Body() createArticleDto: CreateArticleDto, @User() user) {
     return this.articlesService.create(createArticleDto, user);
+  }
+
+  @Public()
+  @Get('test')
+  public async list(@Query() filter: GenericFilter) {
+    try {
+      console.log(filter);
+      return await this.articlesService.findAllPaginated(filter);
+    } catch (error) {
+      console.error('Error in list method:', error);
+      throw error; // This will show the detailed error stack in the logs
+    }
   }
 
   @UseGuards(AuthGuard)

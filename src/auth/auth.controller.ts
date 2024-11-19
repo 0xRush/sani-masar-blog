@@ -15,15 +15,10 @@ export class AuthController {
         return await this.authService.signIn(username, pass);
     }
 
+    @Public()
     @HttpCode(HttpStatus.OK)
     @Post('register')
     async signUp(@Body('username') username:string, @Body('password') pass:string) {
         return await this.authService.signUp(username, pass);
-    }
-
-    @UseGuards(AuthGuard)
-    @Get('profile')
-    getProfile(@Request() req) {
-        return req.user;
     }
 }
