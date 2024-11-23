@@ -12,7 +12,15 @@ export class AuthController {
     @HttpCode(HttpStatus.OK)
     @Post('login')
     async signIn(@Body('username') username:string, @Body('password') pass:string) {
-        return await this.authService.signIn(username, pass);
+        const startTime = Date.now();
+
+        const token = await this.authService.signIn(username, pass);
+
+        const endTime = Date.now();
+
+        const retrievalTime = endTime - startTime;
+
+        return { token, "Retrieval Time":  `${retrievalTime} ms` }
     }
 
     @Public()

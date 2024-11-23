@@ -95,36 +95,63 @@ export class UsersService {
   }
 
   async fillUsers() {
-    // Choose a suitable chunk size
-    // const chunkSize = 10_000;
-    // const totalUsers = 1_000_000;
-    const chunkSize = 100;
-    const totalUsers = 1000;
+    const chunkSize = 10_000;
+    const totalUsers = 1_000_000;
     const users = [];
-
+    const generatedUsernames = new Set(
+      (await this.usersRepository.find({ select: ['username'] })).map(user => user.username)
+    );
+  
     for (let i = 0; i < totalUsers; i++) {
-      const randomName = faker.internet.username();
+      let randomName;
+  
+      // Ensure uniqueness
+      do {
+        randomName = faker.internet.username();
+      } while (generatedUsernames.has(randomName));
+  
+      generatedUsernames.add(randomName); // Mark as used
       const randomPassword = faker.internet.password();
-
+  
       users.push({
         username: randomName,
         password: randomPassword,
       });
-
-      // Insert in chunks
+  
       if (users.length === chunkSize) {
-        console.log('Inserting chunk Number:', i / chunkSize);
-        console.log('Percentage done:', (i / totalUsers) * 100 + '%');
-        await this.usersRepository.insert(users);
-        users.length = 0; // clear the array
+        try {
+          console.log('Inserting chunk Number:', i / chunkSize);
+          console.log('Percentage done:', (i / totalUsers) * 100 + '%');
+          await this.usersRepository.insert(users);
+          users.length = 0; // Clear the array
+        } catch (error) {
+          if (error.code === 'ER_DUP_ENTRY') {
+            console.error('Duplicate entry detected. Retrying...');
+            // Remove duplicates from `users` and continue
+            for (const user of users) {
+              generatedUsernames.delete(user.username);
+            }
+            users.length = 0; // Clear and retry
+          } else {
+            throw error; // Rethrow unknown errors
+          }
+        }
       }
     }
-
+  
     // Insert any remaining users
     if (users.length > 0) {
-      await this.usersRepository.insert(users);
+      try {
+        await this.usersRepository.insert(users);
+      } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') {
+          console.error('Duplicate entry detected. Retrying...');
+        } else {
+          throw error;
+        }
+      }
     }
-
+  
     return 'done';
-  }
+  }  
 }
